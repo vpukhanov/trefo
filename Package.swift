@@ -19,7 +19,7 @@ let package = Package(
             bundleIdentifier: "ru.pukhanov.Trefo",
             teamIdentifier: "BFJQQT3YDX",
             displayVersion: "1.0",
-            bundleVersion: "1",
+            bundleVersion: "2",
             iconAssetName: "AppIcon",
             accentColorAssetName: "AccentColor",
             supportedDeviceFamilies: [
