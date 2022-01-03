@@ -1,4 +1,5 @@
 import SwiftUI
+import TelemetryClient
 
 struct ContentView: View {
     @Binding var startTravelDate: Date?
@@ -9,12 +10,7 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            Image(startTravelDate == nil ? "SetupBackground" : "TravelModeBackground")
-                .resizable()
-                .scaledToFill()
-                .edgesIgnoringSafeArea(.all)
-                .brightness(-0.5)
-                .animation(nil, value: startTravelDate)
+            background
             
             if let startTravelDate = startTravelDate {
                 TravelModeView(
@@ -67,7 +63,17 @@ struct ContentView: View {
         )
     }
     
+    private var background: some View {
+        Image(startTravelDate == nil ? "SetupBackground" : "TravelModeBackground")
+            .resizable()
+            .scaledToFill()
+            .edgesIgnoringSafeArea(.all)
+            .brightness(-0.5)
+            .animation(nil, value: startTravelDate)
+    }
+    
     private func startTravelMode() {
+        TelemetryManager.send("startTravelMode")
         startTravelDate = Date()
     }
     
@@ -75,18 +81,38 @@ struct ContentView: View {
         if let startDate = startTravelDate, movePhotos {
             do {
                 try await PhotoManager.shared.separatePhotos(since: startDate, until: Date())
+                TelemetryManager.send(
+                    "stopTravelMode",
+                    with: ["result": "save"]
+                )
                 showingSuccessConfirmation = true
             } catch PhotoManagerError.limitedLibraryAccess, PhotoManagerError.deniedLibraryAccess {
+                TelemetryManager.send(
+                    "stopTravelMode",
+                    with: ["result": "permissionError"]
+                )
                 showingPhotoLibraryPermissionsError = true
             } catch {
+                TelemetryManager.send(
+                    "stopTravelMode",
+                    with: ["result": "unknownError"]
+                )
                 fatalError("Unknown stop travel mode error: \(error)")
             }
         } else {
+            TelemetryManager.send(
+                "stopTravelMode",
+                with: ["result": "noSaveConfirmation"]
+            )
             showingCancelConfirmation = true
         }
     }
     
     private func cancelTravelMode() {
+        TelemetryManager.send(
+            "stopTravelMode",
+            with: ["result": "noSave"]
+        )
         startTravelDate = nil
     }
 }
