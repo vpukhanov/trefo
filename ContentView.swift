@@ -1,5 +1,4 @@
 import SwiftUI
-import TelemetryClient
 
 struct ContentView: View {
     @Binding var startTravelDate: Date?
@@ -73,7 +72,6 @@ struct ContentView: View {
     }
     
     private func startTravelMode() {
-        TelemetryManager.send("startTravelMode")
         startTravelDate = Date()
     }
     
@@ -81,38 +79,18 @@ struct ContentView: View {
         if let startDate = startTravelDate, movePhotos {
             do {
                 try await PhotoManager.shared.separatePhotos(since: startDate, until: Date())
-                TelemetryManager.send(
-                    "stopTravelMode",
-                    with: ["result": "save"]
-                )
                 showingSuccessConfirmation = true
             } catch PhotoManagerError.limitedLibraryAccess, PhotoManagerError.deniedLibraryAccess {
-                TelemetryManager.send(
-                    "stopTravelMode",
-                    with: ["result": "permissionError"]
-                )
                 showingPhotoLibraryPermissionsError = true
             } catch {
-                TelemetryManager.send(
-                    "stopTravelMode",
-                    with: ["result": "unknownError"]
-                )
                 fatalError("Unknown stop travel mode error: \(error)")
             }
         } else {
-            TelemetryManager.send(
-                "stopTravelMode",
-                with: ["result": "noSaveConfirmation"]
-            )
             showingCancelConfirmation = true
         }
     }
     
     private func cancelTravelMode() {
-        TelemetryManager.send(
-            "stopTravelMode",
-            with: ["result": "noSave"]
-        )
         startTravelDate = nil
     }
 }

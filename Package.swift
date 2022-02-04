@@ -18,7 +18,7 @@ let package = Package(
             targets: ["AppModule"],
             bundleIdentifier: "ru.pukhanov.Trefo",
             teamIdentifier: "BFJQQT3YDX",
-            displayVersion: "1.1",
+            displayVersion: "2022.1",
             bundleVersion: "2",
             iconAssetName: "AppIcon",
             accentColorAssetName: "AccentColor",
@@ -37,15 +37,9 @@ let package = Package(
             ]
         )
     ],
-    dependencies: [
-        .package(url: "https://github.com/TelemetryDeck/SwiftClient", "1.1.6"..<"2.0.0")
-    ],
     targets: [
         .executableTarget(
             name: "AppModule",
-            dependencies: [
-                .product(name: "TelemetryClient", package: "swiftclient")
-            ],
             path: "."
         )
     ]
