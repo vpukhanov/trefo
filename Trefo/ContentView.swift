@@ -27,62 +27,75 @@ struct ContentView: View {
     @AppStorage("startTravelDate") private var startTravelDate: Date?
 
     @State private var activeAlert: ActiveAlert?
+    @State private var isPresentingSettings = false
 
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        ZStack {
-            background
-
-            if let startTravelDate {
-                TravelModeView(
-                    startTravelDate: startTravelDate,
-                    stopTravelMode: stopTravelMode
-                )
-            } else {
-                SetupView(startTravelMode: startTravelMode)
+        NavigationView {
+            ZStack {
+                background
+                
+                if let startTravelDate {
+                    TravelModeView(
+                        startTravelDate: startTravelDate,
+                        stopTravelMode: stopTravelMode
+                    )
+                } else {
+                    SetupView(startTravelMode: startTravelMode)
+                }
             }
-        }
-        .foregroundColor(.white)
-        .alert(item: $activeAlert) { alert in
-            switch alert {
-            case .leaveConfirm:
-                return Alert(
-                    title: Text("Leave Travel Mode"),
-                    message: Text("Leaving travel mode will leave the photos as is, without sorting them into albums."),
-                    primaryButton: .cancel(Text("Cancel")),
-                    secondaryButton: .destructive(Text("Leave"), action: {
-                        withAnimation { cancelTravelMode() }
-                    })
-                )
-
-            case .permissionsError:
-                return Alert(
-                    title: Text("No Photo Library Permissions"),
-                    message: Text("Trefo needs full photo library access to move your travel photos to a separate album."),
-                    primaryButton: .cancel(Text("Cancel")),
-                    secondaryButton: .default(Text("Go to Settings"), action: {
-                        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-                            openURL(settingsURL)
-                        }
-                    })
-                )
-
-            case .success(let date):
-                return Alert(
-                    title: Text("Left Travel Mode"),
-                    message: Text("Successfully created a new album \"\(PhotoManager.shared.makeAlbumName(for: date))\" and moved all photos taken during travel mode into it."),
-                    dismissButton: .default(Text("OK"), action: {
-                        cancelTravelMode()
-                    })
-                )
-
-            case .generic(let message):
-                return Alert(
-                    title: Text("Error"),
-                    message: Text(message),
-                    dismissButton: .default(Text("OK"))
-                )
+            .toolbar {
+                Button {
+                    withAnimation { isPresentingSettings = true }
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
+                }
+            }
+            .foregroundColor(.white)
+            .alert(item: $activeAlert) { alert in
+                switch alert {
+                case .leaveConfirm:
+                    return Alert(
+                        title: Text("Leave Travel Mode"),
+                        message: Text("Leaving travel mode will leave the photos as is, without sorting them into albums."),
+                        primaryButton: .cancel(Text("Cancel")),
+                        secondaryButton: .destructive(Text("Leave"), action: {
+                            withAnimation { cancelTravelMode() }
+                        })
+                    )
+                    
+                case .permissionsError:
+                    return Alert(
+                        title: Text("No Photo Library Permissions"),
+                        message: Text("Trefo needs full photo library access to move your travel photos to a separate album."),
+                        primaryButton: .cancel(Text("Cancel")),
+                        secondaryButton: .default(Text("Go to Settings"), action: {
+                            if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                                openURL(settingsURL)
+                            }
+                        })
+                    )
+                    
+                case .success(let date):
+                    return Alert(
+                        title: Text("Left Travel Mode"),
+                        message: Text("Successfully created a new album \"\(PhotoManager.shared.makeAlbumName(for: date))\" and moved all photos taken during travel mode into it."),
+                        dismissButton: .default(Text("OK"), action: {
+                            cancelTravelMode()
+                        })
+                    )
+                    
+                case .generic(let message):
+                    return Alert(
+                        title: Text("Error"),
+                        message: Text(message),
+                        dismissButton: .default(Text("OK"))
+                    )
+                }
+            }
+            .sheet(isPresented: $isPresentingSettings) {
+                SettingsView()
             }
         }
     }

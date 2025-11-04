@@ -14,4 +14,8 @@ struct TrefoApp: App {
             ContentView()
         }
     }
+    
+    init() {
+        Task { await TravelNotificationManager.shared.syncAuthorizationState() }
+    }
 }

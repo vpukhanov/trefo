@@ -10,9 +10,22 @@
 		111094EE2EB9E01400ACF2F4 /* Trefo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Trefo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1102C3FB2EBA2CC800D41C8D /* Exceptions for "Trefo" folder in "Trefo" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 111094ED2EB9E01400ACF2F4 /* Trefo */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		111094F02EB9E01400ACF2F4 /* Trefo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1102C3FB2EBA2CC800D41C8D /* Exceptions for "Trefo" folder in "Trefo" target */,
+			);
 			path = Trefo;
 			sourceTree = "<group>";
 		};
@@ -258,12 +271,15 @@
 				DEVELOPMENT_TEAM = BFJQQT3YDX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Trefo/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Trefo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Trefo needs background access to detect country changes and remind you to enable travel mode";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Trefo uses your location to alert you when you travel to a new country";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Trefo needs Photo Library access to move your travel photos into separate albums";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -293,12 +309,15 @@
 				DEVELOPMENT_TEAM = BFJQQT3YDX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Trefo/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Trefo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Trefo needs background access to detect country changes and remind you to enable travel mode";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Trefo uses your location to alert you when you travel to a new country";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Trefo needs Photo Library access to move your travel photos into separate albums";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
