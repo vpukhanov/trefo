@@ -17,7 +17,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 // MARK: Travel notifications toggle + state
                 Section(header: Text("Travel Notifications"), footer: Text("Get a reminder to turn on Travel Mode when you arrive in a new country.")) {

@@ -32,7 +32,7 @@ struct ContentView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 background
                 
