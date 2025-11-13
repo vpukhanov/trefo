@@ -106,7 +106,7 @@ struct ContentView: View {
             .scaledToFill()
             .ignoresSafeArea()
             .brightness(-0.5)
-            .animation(nil, value: startTravelDate)
+            .overlay(.ultraThinMaterial)
             .accessibilityHidden(true)
     }
 
