@@ -49,7 +49,7 @@ struct ContentView: View {
                 Button {
                     withAnimation { isPresentingSettings = true }
                 } label: {
-                    Label("Settings", systemImage: "gearshape")
+                    Label("Settings", systemImage: "gear")
                 }
             }
             .foregroundColor(.white)

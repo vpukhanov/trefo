@@ -19,6 +19,7 @@ struct SetupView: View {
                     .padding(4)
             }
             .buttonStyle(.glassProminent)
+            .controlSize(.large)
             .tint(.accentColor)
             .accessibilityLabel("Turn on Travel Mode")
         }

@@ -62,7 +62,7 @@ struct SettingsView: View {
                                 openURL(url)
                             }
                         } label: {
-                            Label("Go to Settings…", systemImage: "gearshape")
+                            Label("Go to Settings…", systemImage: "gear")
                         }
                     }
                 }

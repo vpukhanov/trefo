@@ -26,6 +26,7 @@ struct TravelModeView: View {
                     .padding(4)
             }
             .buttonStyle(.glassProminent)
+            .controlSize(.large)
             .tint(.accentColor)
             .accessibilityLabel("Turn off Travel Mode and move photos to an album")
 
