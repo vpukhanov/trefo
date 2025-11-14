@@ -7,13 +7,12 @@ struct TravelModeView: View {
     var body: some View {
         VStack(spacing: 16) {
             VStack {
-                Text("Travel Mode On")
-                    .font(.title)
-                    .bold()
+                Text("Travel Mode is On")
+                    .font(.title.bold())
                     .accessibilityAddTraits(.isHeader)
-                
-                Text("Since \(startTravelDate, style: .date)")
-                    .font(.subheadline)
+
+                Text("Since \(startTravelDate, format: .dateTime.year().month().day())")
+                    .font(.body)
                     .foregroundStyle(.secondary)
             }
 
@@ -22,8 +21,7 @@ struct TravelModeView: View {
                     await stopTravelMode(true)
                 }
             } label: {
-                Text("Turn Off and Move Photos to Album…")
-                    .padding(4)
+                Label("Turn Off and Create an Album", systemImage: "folder.fill.badge.plus")
             }
             .buttonStyle(.glassProminent)
             .controlSize(.large)
@@ -35,8 +33,7 @@ struct TravelModeView: View {
                     await stopTravelMode(false)
                 }
             } label: {
-                Text("Leave Travel Mode")
-                    .padding(4)
+                Label("Leave Travel Mode", systemImage: "xmark.circle")
             }
             .buttonStyle(.glassProminent)
             .accessibilityLabel("Leave Travel Mode without moving photos")

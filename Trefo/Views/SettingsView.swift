@@ -1,10 +1,3 @@
-//
-//  SettingsView.swift
-//  Trefo
-//
-//  Created by Вячеслав Пуханов on 04.11.2025.
-//
-
 import SwiftUI
 import CoreLocation
 import UserNotifications
@@ -12,6 +5,7 @@ import UIKit
 
 struct SettingsView: View {
     @StateObject private var manager = TravelNotificationManager.shared
+
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
@@ -19,74 +13,82 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                // MARK: Travel notifications toggle + state
-                Section(header: Text("Travel Notifications"), footer: Text("Get a reminder to turn on Travel Mode when you arrive in a new country.")) {
-                    Toggle(isOn: enabledBinding) {
-                        Text("Notifications")
-                    }
-                    
-                    if let region = manager.lastKnownRegion {
-                        HStack {
-                            Label("Last region", systemImage: "globe")
-                            Spacer()
-                            Text(region)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.5)
-                                .allowsTightening(true)
-                        }
-                    }
-                }
-                
-                
-                // MARK: Permission statuses
+                travelNotificationsSection
+
                 if manager.isEnabled {
-                    Section(header: Text("Permissions"),
-                            footer: Text("For background country detection, Location should be “Always” and Notifications should be “Authorized“.")) {
-                        HStack {
-                            Label("Location", systemImage: "location.fill")
-                            Spacer()
-                            Text(locationDescription(manager.locationAuthorization))
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        HStack {
-                            Label("Notifications", systemImage: "bell.fill")
-                            Spacer()
-                            Text(notificationDescription(manager.notificationAuthorization))
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        Button {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                openURL(url)
-                            }
-                        } label: {
-                            Label("Go to Settings…", systemImage: "gear")
-                        }
-                    }
+                    permissionsSection
                 }
             }
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done", role: .cancel) {
+                        dismiss()
+                    }
+                }
+            }
             .task {
                 await manager.configureOnLaunch()
             }
-            .onChange(of: scenePhase) {
-                if scenePhase == .active {
+            .onChange(of: scenePhase, initial: false) { _, newPhase in
+                if newPhase == .active {
                     Task { await manager.configureOnLaunch() }
-                }
-            }
-            .toolbar {
-                Button(role: .close) {
-                    dismiss()
-                } label: {
-                    Text("Done")
                 }
             }
         }
     }
 
-    // MARK: - Bindings & helpers
+    // MARK: - Sections
+
+    private var travelNotificationsSection: some View {
+        Section {
+            Toggle("Travel notifications", isOn: enabledBinding)
+
+            if let region = manager.lastKnownRegion {
+                LabeledContent {
+                    Text(region)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                } label: {
+                    Label("Last region", systemImage: "globe")
+                }
+            }
+        } footer: {
+            Text("Get a reminder to turn on Travel Mode when you arrive in a new country")
+        }
+    }
+
+    private var permissionsSection: some View {
+        Section {
+            LabeledContent {
+                Text(locationDescription(manager.locationAuthorization))
+                    .foregroundStyle(.secondary)
+            } label: {
+                Label("Location", systemImage: "location.fill")
+            }
+
+            LabeledContent {
+                Text(notificationDescription(manager.notificationAuthorization))
+                    .foregroundStyle(.secondary)
+            } label: {
+                Label("Notifications", systemImage: "bell.fill")
+            }
+
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    openURL(url)
+                }
+            } label: {
+                Label("Open System Settings", systemImage: "gear")
+            }
+        } footer: {
+            Text("For background country detection, Location should be “Always” and Notifications should be “Authorized”")
+        }
+    }
+
+    // MARK: - Bindings
 
     private var enabledBinding: Binding<Bool> {
         Binding(
@@ -97,22 +99,25 @@ struct SettingsView: View {
         )
     }
 
+    // MARK: - Helpers
+
     private func locationDescription(_ status: CLAuthorizationStatus) -> String {
         switch status {
-        case .authorizedAlways:     return "Always"
-        case .authorizedWhenInUse:  return "When In Use"
-        case .denied:               return "Denied"
-        case .restricted:           return "Restricted"
-        case .notDetermined:        return "Not Determined"
-        @unknown default:           return "Unknown"
+        case .authorizedAlways:     "Always"
+        case .authorizedWhenInUse:  "When In Use"
+        case .denied:               "Denied"
+        case .restricted:           "Restricted"
+        case .notDetermined:        "Not Determined"
+        @unknown default:           "Unknown"
         }
     }
 
     private func notificationDescription(_ status: UNAuthorizationStatus) -> String {
         switch status {
-        case .authorized, .provisional:   return "Authorized"
-        case .denied:       return "Denied"
-        default:   return "Unknown"
+        case .authorized, .provisional: "Authorized"
+        case .denied:                   "Denied"
+        case .notDetermined:            "Not Determined"
+        default:                        "Unknown"
         }
     }
 }
