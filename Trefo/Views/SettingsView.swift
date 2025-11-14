@@ -46,14 +46,14 @@ struct SettingsView: View {
                         HStack {
                             Label("Location", systemImage: "location.fill")
                             Spacer()
-                            Text(locationDescription(manager.locationAuthStatus))
+                            Text(locationDescription(manager.locationAuthorization))
                                 .foregroundStyle(.secondary)
                         }
                         
                         HStack {
                             Label("Notifications", systemImage: "bell.fill")
                             Spacer()
-                            Text(notificationDescription(manager.notificationAuthStatus))
+                            Text(notificationDescription(manager.notificationAuthorization))
                                 .foregroundStyle(.secondary)
                         }
                         
@@ -69,11 +69,11 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .task {
-                await manager.syncAuthorizationState()
+                await manager.configureOnLaunch()
             }
             .onChange(of: scenePhase) {
                 if scenePhase == .active {
-                    Task { await manager.syncAuthorizationState() }
+                    Task { await manager.configureOnLaunch() }
                 }
             }
             .toolbar {

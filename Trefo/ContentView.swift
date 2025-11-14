@@ -80,7 +80,7 @@ struct ContentView: View {
                 case .success(let date):
                     return Alert(
                         title: Text("Left Travel Mode"),
-                        message: Text("Successfully created a new album \"\(PhotoManager.shared.makeAlbumName(for: date))\" and moved all photos taken during travel mode into it."),
+                        message: Text("Successfully created a new album \"\(PhotoManager.shared.albumTitle(for: date))\" and moved all photos taken during travel mode into it."),
                         dismissButton: .default(Text("OK"), action: {
                             cancelTravelMode()
                         })
@@ -118,7 +118,7 @@ struct ContentView: View {
     private func stopTravelMode(movePhotos: Bool) async {
         if let startDate = startTravelDate, movePhotos {
             do {
-                try await PhotoManager.shared.separatePhotos(since: startDate, until: Date())
+                try await PhotoManager.shared.separateTripPhotos(from: startDate, to: Date())
                 activeAlert = .success(date: startDate)
             } catch PhotoManagerError.limitedLibraryAccess, PhotoManagerError.deniedLibraryAccess {
                 activeAlert = .permissionsError

@@ -4,54 +4,96 @@ import CoreLocation
 import UserNotifications
 import MapKit
 
+/// Central coordinator for the “travel notifications” feature.
+/// - Stores a user-facing toggle (enabled/disabled).
+/// - Manages notification + background location permissions.
+/// - Monitors significant location changes when allowed.
+/// - Reverse-geocodes locations to a coarse region (e.g. country).
+/// - Posts a local notification when the region changes.
 @MainActor
 final class TravelNotificationManager: NSObject, ObservableObject {
+
     // MARK: - Singleton
+
     static let shared = TravelNotificationManager()
 
     // MARK: - Published state for SwiftUI
+
+    /// User-facing toggle for the feature.
     @Published private(set) var isEnabled: Bool
+
+    /// Whether we are currently monitoring significant location changes.
     @Published private(set) var isMonitoring: Bool = false
-    @Published private(set) var locationAuthStatus: CLAuthorizationStatus
-    @Published private(set) var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
+
+    /// Current location authorization status.
+    @Published private(set) var locationAuthorization: CLAuthorizationStatus
+
+    /// Current notification authorization status.
+    @Published private(set) var notificationAuthorization: UNAuthorizationStatus = .notDetermined
+
+    /// Last known (coarse) region name, e.g. “Finland”.
     @Published private(set) var lastKnownRegion: String?
 
     // MARK: - Private
-    private let locationManager = CLLocationManager()
 
-    private enum Keys {
-        static let enabled = "travelNotif.enabled"
-        static let lastRegion = "travelNotif.lastRegion"
+    private let locationManager = CLLocationManager()
+    private let notificationCenter = UNUserNotificationCenter.current()
+    private let userDefaults: UserDefaults
+
+    private enum DefaultsKey {
+        static let enabled = "travelNotifications.enabled"
+        static let lastRegion = "travelNotifications.lastRegion"
+    }
+
+    private enum NotificationCategory {
+        static let travelCountryChange = "TRAVEL_COUNTRY_CHANGE"
     }
 
     // MARK: - Init
+
     private override init() {
-        self.isEnabled = UserDefaults.standard.bool(forKey: Keys.enabled)
-        self.lastKnownRegion = UserDefaults.standard.string(forKey: Keys.lastRegion)
-        self.locationAuthStatus = CLLocationManager().authorizationStatus
+        self.userDefaults = .standard
+        self.isEnabled = userDefaults.bool(forKey: DefaultsKey.enabled)
+        self.lastKnownRegion = userDefaults.string(forKey: DefaultsKey.lastRegion)
+
+        // Use a temporary manager to grab initial status without touching delegate yet.
+        self.locationAuthorization = CLLocationManager().authorizationStatus
 
         super.init()
 
+        // Configure location manager
         locationManager.delegate = self
         locationManager.pausesLocationUpdatesAutomatically = true
-        // Country-level accuracy is enough and battery friendly
         locationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
         locationManager.distanceFilter = kCLDistanceFilterNone
 
-        Task { await refreshNotificationAuth() }
-
-        // If user had the feature on previously, resume monitoring if authorized.
-        if isEnabled { startMonitoringIfAuthorized() }
+        Task {
+            await refreshNotificationAuthorization()
+        }
     }
 
-    // MARK: - Public API (call from SwiftUI)
+    // MARK: - Public API (SwiftUI-friendly)
 
-    /// Toggle the feature on/off from UI. When turning on, this will request the
-    /// required permissions (Notifications + Location Always) if needed.
+    /// Call from app launch / foreground to sync state and resume monitoring if appropriate.
+    func configureOnLaunch() async {
+        // Refresh statuses
+        locationAuthorization = locationManager.authorizationStatus
+        await refreshNotificationAuthorization()
+
+        if isEnabled {
+            startMonitoringIfAuthorized()
+        } else {
+            stopMonitoring()
+        }
+    }
+
+    /// Toggle the travel notifications feature from UI.
+    /// When enabling, will request required permissions and start monitoring if granted.
     func setEnabled(_ enabled: Bool) async {
         guard enabled != isEnabled else { return }
+
         isEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Keys.enabled)
+        userDefaults.set(enabled, forKey: DefaultsKey.enabled)
 
         if enabled {
             await ensurePermissions()
@@ -61,79 +103,93 @@ final class TravelNotificationManager: NSObject, ObservableObject {
         }
     }
 
-    /// Call on app launch and when returning to foreground to keep state in sync.
-    func syncAuthorizationState() async {
-        locationAuthStatus = locationManager.authorizationStatus
-        await refreshNotificationAuth()
-        if isEnabled { startMonitoringIfAuthorized() }
+    /// Explicitly refresh permission states (useful if user changed them in Settings).
+    func refreshPermissions() async {
+        locationAuthorization = locationManager.authorizationStatus
+        await refreshNotificationAuthorization()
+        if isEnabled {
+            startMonitoringIfAuthorized()
+        } else {
+            stopMonitoring()
+        }
     }
 
-    // MARK: - Permission workflow
+    /// Convenience for SwiftUI: returns whether we *could* monitor given current permissions.
+    var canMonitorInBackground: Bool {
+        isEnabled && locationAuthorization == .authorizedAlways
+    }
 
-    /// Ensure we have permissions for notifications and background location.
+    // MARK: - Permissions
+
+    /// Ensure we have notification + background location permissions.
+    /// This function is “best effort” and does not throw; it updates state instead.
     func ensurePermissions() async {
         await requestNotificationPermissionIfNeeded()
         await requestLocationPermissionIfNeeded()
     }
 
     private func requestNotificationPermissionIfNeeded() async {
-        let center = UNUserNotificationCenter.current()
-        let settings = await center.notificationSettings()
-        notificationAuthStatus = settings.authorizationStatus
+        let settings = await notificationCenter.notificationSettings()
+        notificationAuthorization = settings.authorizationStatus
 
         guard settings.authorizationStatus == .notDetermined else { return }
 
         do {
-            let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+            let granted = try await notificationCenter.requestAuthorization(options: [.alert, .sound, .badge])
             if granted {
-                let category = UNNotificationCategory(
-                    identifier: "TRAVEL_COUNTRY_CHANGE",
-                    actions: [],
-                    intentIdentifiers: [],
-                    options: [.customDismissAction]
-                )
-                center.setNotificationCategories([category])
+                registerNotificationCategories()
             }
-            await refreshNotificationAuth()
+            await refreshNotificationAuthorization()
         } catch {
-            // You could log this if you have logging infra.
+            // You might log this error if you have logging infrastructure.
         }
+    }
+
+    private func registerNotificationCategories() {
+        let travelCategory = UNNotificationCategory(
+            identifier: NotificationCategory.travelCountryChange,
+            actions: [],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+        notificationCenter.setNotificationCategories([travelCategory])
     }
 
     private func requestLocationPermissionIfNeeded() async {
         let status = locationManager.authorizationStatus
-        locationAuthStatus = status
+        locationAuthorization = status
 
         switch status {
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
-            // We’ll escalate to Always after WhenInUse is granted via delegate.
+            // Elevate to Always once WhenInUse is granted (handled in delegate).
         case .authorizedWhenInUse:
-            // Required for SLC background delivery
             locationManager.requestAlwaysAuthorization()
         default:
             break
         }
     }
 
-    private func refreshNotificationAuth() async {
-        let settings = await UNUserNotificationCenter.current().notificationSettings()
-        notificationAuthStatus = settings.authorizationStatus
+    private func refreshNotificationAuthorization() async {
+        let settings = await notificationCenter.notificationSettings()
+        notificationAuthorization = settings.authorizationStatus
     }
 
     // MARK: - Monitoring control
 
     private func startMonitoringIfAuthorized() {
         let status = locationManager.authorizationStatus
-        locationAuthStatus = status
+        locationAuthorization = status
 
-        guard isEnabled else { return }
+        guard isEnabled else {
+            isMonitoring = false
+            return
+        }
 
         if status == .authorizedAlways {
             locationManager.startMonitoringSignificantLocationChanges()
             isMonitoring = true
         } else {
-            // If we’re not properly authorized, don’t monitor.
             isMonitoring = false
         }
     }
@@ -143,62 +199,81 @@ final class TravelNotificationManager: NSObject, ObservableObject {
         isMonitoring = false
     }
 
-    // MARK: - Handle new locations → detect country change → notify
+    // MARK: - Location handling
 
     private func handleNewLocation(_ location: CLLocation) {
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
+
             do {
                 guard let request = MKReverseGeocodingRequest(location: location) else { return }
                 let items = try await request.mapItems
-                guard let region = items.first?.addressRepresentations?.regionName else { return }
 
-                if region != lastKnownRegion {
-                    lastKnownRegion = region
-                    UserDefaults.standard.set(region, forKey: Keys.lastRegion)
-                    await postCountryChangedNotification(region: region)
+                guard let item = items.first else { return }
+
+                let regionName = item.addressRepresentations?.regionName
+
+                guard let region = regionName, !region.isEmpty else { return }
+
+                if region != self.lastKnownRegion {
+                    await self.didChangeRegion(to: region)
                 }
             } catch {
-                // Geocoding can fail intermittently; we can ignore and wait for next SLC.
+                // Reverse geocoding can fail sporadically; we simply wait for the next update.
             }
         }
     }
 
-    private func postCountryChangedNotification(region: String) async {
-        let center = UNUserNotificationCenter.current()
-        let settings = await center.notificationSettings()
-        notificationAuthStatus = settings.authorizationStatus
+    private func didChangeRegion(to region: String) async {
+        lastKnownRegion = region
+        userDefaults.set(region, forKey: DefaultsKey.lastRegion)
+        await postCountryChangedNotification(region: region)
+    }
 
-        guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
+    private func postCountryChangedNotification(region: String) async {
+        let settings = await notificationCenter.notificationSettings()
+        notificationAuthorization = settings.authorizationStatus
+
+        guard settings.authorizationStatus == .authorized ||
+              settings.authorizationStatus == .provisional else {
+            return
+        }
 
         let content = UNMutableNotificationContent()
         content.title = "Welcome to \(region)"
         content.body = "Open Trefo to start collecting your photos in travel mode."
         content.sound = .default
-        content.categoryIdentifier = "TRAVEL_COUNTRY_CHANGE"
+        content.categoryIdentifier = NotificationCategory.travelCountryChange
 
-        // Fire immediately once per detected change.
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
             content: content,
-            trigger: nil
+            trigger: nil // fire immediately
         )
 
-        do { try await center.add(request) } catch { /* ignore */ }
+        do {
+            try await notificationCenter.add(request)
+        } catch {
+            // Ignore; user will simply not see a notification in this case.
+        }
     }
 }
 
 // MARK: - CLLocationManagerDelegate
-extension TravelNotificationManager: CLLocationManagerDelegate {
-    nonisolated func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        Task { @MainActor in
-            self.locationAuthStatus = status
 
-            // Elevate to Always after WhenInUse is granted
+extension TravelNotificationManager: CLLocationManagerDelegate {
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            let status = manager.authorizationStatus
+            self.locationAuthorization = status
+
+            // Elevate to Always once WhenInUse is granted.
             if status == .authorizedWhenInUse {
                 manager.requestAlwaysAuthorization()
             }
 
-            // Start/stop monitoring based on current state
             if self.isEnabled {
                 if status == .authorizedAlways {
                     self.startMonitoringIfAuthorized()
@@ -211,8 +286,9 @@ extension TravelNotificationManager: CLLocationManagerDelegate {
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let latest = locations.last else { return }
-        Task { @MainActor in
-            self.handleNewLocation(latest)
+
+        Task { @MainActor [weak self] in
+            self?.handleNewLocation(latest)
         }
     }
 }

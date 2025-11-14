@@ -12,10 +12,9 @@ struct TrefoApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task {
+                    await TravelNotificationManager.shared.configureOnLaunch()
+                }
         }
-    }
-    
-    init() {
-        Task { await TravelNotificationManager.shared.syncAuthorizationState() }
     }
 }
