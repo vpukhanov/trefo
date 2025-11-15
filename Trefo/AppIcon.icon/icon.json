@@ -1,14 +1,42 @@
 {
   "fill" : {
-    "automatic-gradient" : "display-p3:0.35156,0.76855,0.74219,1.00000"
+    "linear-gradient" : [
+      "display-p3:0.76078,1.00000,0.62353,1.00000",
+      "display-p3:0.13725,0.96471,0.72549,1.00000"
+    ],
+    "orientation" : {
+      "start" : {
+        "x" : 0.5,
+        "y" : 1
+      },
+      "stop" : {
+        "x" : 0.5,
+        "y" : 0.3
+      }
+    }
   },
   "groups" : [
     {
       "layers" : [
         {
-          "glass" : true,
-          "image-name" : "lens.png",
-          "name" : "lens"
+          "image-name" : "FolderFront.svg",
+          "name" : "FolderFront"
+        }
+      ],
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "Cards.svg",
+          "name" : "Cards"
         }
       ],
       "shadow" : {
@@ -16,18 +44,15 @@
         "opacity" : 0.5
       },
       "translucency" : {
-        "enabled" : true,
+        "enabled" : false,
         "value" : 0.5
       }
     },
     {
       "layers" : [
         {
-          "blend-mode" : "normal",
-          "fill" : "none",
-          "glass" : false,
-          "image-name" : "Camera-dynamic-premium.png",
-          "name" : "Camera-dynamic-premium"
+          "image-name" : "FolderBack.svg",
+          "name" : "FolderBack"
         }
       ],
       "shadow" : {
